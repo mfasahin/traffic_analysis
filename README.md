@@ -4,12 +4,13 @@ Bu proje, video üzerinde araç sayımı ve yoğunluk analizi yapan bir Python u
 
 ## Özellikler
 
-- 🚗 Araç tespiti (YOLOv8)
-- 📊 Araç sayımı ve yoğunluk analizi
-- 📈 Detaylı istatistikler
-- 🎥 Video görselleştirme
-- 📄 JSON formatında raporlama
-- 🏗️ Clean Architecture mimarisi
+- Araç tespiti (YOLOv8)
+- Araç sayımı ve yoğunluk analizi
+- ROI (Region of Interest) desteği - yol alanı tanımlama
+- Detaylı istatistikler
+- Video görselleştirme
+- JSON formatında raporlama
+- Clean Architecture mimarisi
 
 ## Kurulum
 
@@ -29,7 +30,22 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Bu komut `veriseti_2.mp4` dosyasını analiz eder ve sonuçları `statistics.json` dosyasına kaydeder.
+Bu komut `veriseti_2.mp4` dosyasını analiz eder ve sonuçları `statistics.json` dosyasına kaydeder. ROI belirtilmediğinde, yoğunluk hesaplaması için tüm frame alanı kullanılır.
+
+### ROI (Region of Interest) Tanımlama
+
+Yoğunluk analizini sadece yol alanında yapmak için ROI tanımlayabilirsiniz:
+
+```bash
+# İnteraktif ROI seçici ile
+python select_roi.py veriseti_2.mp4 roi_coordinates.json
+
+# Seçilen ROI ile analiz
+python main.py --video veriseti_2.mp4 --roi roi_coordinates.json
+
+# Komut satırından ROI koordinatları ile
+python main.py --video veriseti_2.mp4 --roi "100,200,800,200,900,600,50,600"
+```
 
 ### Gelişmiş Kullanım
 
@@ -40,8 +56,8 @@ python main.py --video veriseti_2.mp4 --skip-frames 2 --output-video output.mp4
 # Görüntüleme olmadan sadece analiz
 python main.py --video veriseti_2.mp4 --no-display
 
-# Tam özellikli analiz
-python main.py --video veriseti_2.mp4 --model yolov8n.pt --confidence 0.25 --output-video output.mp4 --output-json results.json
+# ROI ile tam özellikli analiz
+python main.py --video veriseti_2.mp4 --model yolov8n.pt --confidence 0.25 --roi roi_coordinates.json --output-video output.mp4 --output-json results.json
 ```
 
 ### Parametreler
@@ -49,6 +65,7 @@ python main.py --video veriseti_2.mp4 --model yolov8n.pt --confidence 0.25 --out
 - `--video`: Analiz edilecek video dosyasının yolu (varsayılan: veriseti_2.mp4)
 - `--model`: YOLO model dosyası (varsayılan: yolov8n.pt)
 - `--confidence`: Tespit için güven eşiği (varsayılan: 0.25)
+- `--roi`: ROI koordinatları - virgülle ayrılmış değerler (örn: "x1,y1,x2,y2,x3,y3,...") veya select_roi.py ile oluşturulan JSON dosyası yolu. Belirtilmezse tüm frame alanı kullanılır.
 - `--output-video`: Görselleştirmeli çıktı video dosyası (opsiyonel)
 - `--output-json`: İstatistiklerin kaydedileceği JSON dosyası (varsayılan: statistics.json)
 - `--display`: İşlem sırasında videoyu göster (varsayılan: açık)
@@ -58,11 +75,12 @@ python main.py --video veriseti_2.mp4 --model yolov8n.pt --confidence 0.25 --out
 ## Proje Yapısı
 
 ```
-traffic_analyze/
+traffic_analysis/
 ├── domain/                    # Domain Layer
 │   ├── entities/             # İş mantığı varlıkları
 │   │   ├── vehicle.py
-│   │   └── traffic_statistics.py
+│   │   ├── traffic_statistics.py
+│   │   └── roi.py
 │   └── use_cases/            # İş mantığı kullanım senaryoları
 │       └── count_vehicles.py
 ├── application/               # Application Layer
@@ -82,6 +100,7 @@ traffic_analyze/
 │   └── reporting/            # Raporlama
 │       └── statistics_reporter.py
 ├── main.py                   # Ana giriş noktası
+├── select_roi.py             # ROI seçici araç
 ├── requirements.txt          # Python bağımlılıkları
 └── README.md                 # Bu dosya
 ```
