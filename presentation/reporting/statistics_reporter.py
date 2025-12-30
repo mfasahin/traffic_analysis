@@ -3,6 +3,7 @@
 from typing import Optional
 from domain.entities.traffic_statistics import TrafficStatistics
 from domain.entities.vehicle import VehicleType
+from domain.entities.direction import Direction
 import json
 
 
@@ -26,15 +27,42 @@ class StatisticsReporter:
         print(f"Total Vehicles Detected: {statistics.total_vehicles}")
         print(f"Max Vehicles in Single Frame: {statistics.max_vehicles_in_frame}")
         print(f"Average Vehicles per Frame: {statistics.average_vehicles_per_frame:.2f}")
-        print(f"Peak Density: {statistics.peak_density:.4f}")
-        print(f"\nVehicles by Type:")
+        print(f"Peak Density: {statistics.peak_density:.2f}%")
+        
+        if statistics.total_tracked_vehicles > 0:
+            print(f"\n--- TRACKING STATISTICS ---")
+            print(f"Total Tracked Vehicles: {statistics.total_tracked_vehicles}")
+            if statistics.average_speed_kmh > 0:
+                print(f"Average Speed: {statistics.average_speed_kmh:.1f} km/h")
+            if statistics.max_speed_kmh > 0:
+                print(f"Maximum Speed: {statistics.max_speed_kmh:.1f} km/h")
+            if statistics.total_speed_violations > 0:
+                print(f"Speed Violations: {statistics.total_speed_violations}")
+        
+        print(f"\n--- VEHICLES BY TYPE ---")
         for vehicle_type, count in statistics.vehicles_by_type.items():
             if count > 0:
                 print(f"  {vehicle_type.value.upper()}: {count}")
         
+        if statistics.vehicles_by_direction:
+            print(f"\n--- VEHICLES BY DIRECTION ---")
+            for direction, count in statistics.vehicles_by_direction.items():
+                if count > 0:
+                    print(f"  {direction.value.upper()}: {count}")
+        
+        if statistics.speed_statistics_by_direction:
+            print(f"\n--- SPEED BY DIRECTION ---")
+            for direction, stats in statistics.speed_statistics_by_direction.items():
+                print(f"  {direction.value.upper()}:")
+                print(f"    Average: {stats.get('average', 0):.1f} km/h")
+                print(f"    Max: {stats.get('max', 0):.1f} km/h")
+                print(f"    Min: {stats.get('min', 0):.1f} km/h")
+                print(f"    Count: {stats.get('count', 0)}")
+        
         if statistics.start_time and statistics.end_time:
             duration = statistics.end_time - statistics.start_time
-            print(f"\nAnalysis Duration: {duration.total_seconds():.2f} seconds")
+            print(f"\n--- ANALYSIS INFO ---")
+            print(f"Analysis Duration: {duration.total_seconds():.2f} seconds")
             print(f"Total Frames Analyzed: {len(statistics.frame_statistics)}")
         
         print("="*60 + "\n")
@@ -59,6 +87,21 @@ class StatisticsReporter:
             "start_time": statistics.start_time.isoformat() if statistics.start_time else None,
             "end_time": statistics.end_time.isoformat() if statistics.end_time else None,
         }
+        
+        # Add tracking statistics if available
+        if statistics.total_tracked_vehicles > 0:
+            data["tracking"] = {
+                "total_tracked_vehicles": statistics.total_tracked_vehicles,
+                "average_speed_kmh": statistics.average_speed_kmh,
+                "max_speed_kmh": statistics.max_speed_kmh,
+                "total_speed_violations": statistics.total_speed_violations,
+                "vehicles_by_direction": {
+                    d.value: count for d, count in statistics.vehicles_by_direction.items()
+                },
+                "speed_statistics_by_direction": {
+                    d.value: stats for d, stats in statistics.speed_statistics_by_direction.items()
+                }
+            }
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)

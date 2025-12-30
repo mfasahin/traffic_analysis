@@ -1,7 +1,7 @@
 """OpenCV video processor implementation."""
 
 import cv2
-from typing import Optional
+from typing import Optional, Tuple
 from application.interfaces.video_processor import IVideoProcessor
 
 
@@ -65,7 +65,7 @@ class OpenCVVideoProcessor(IVideoProcessor):
             return 0.0
         return self.cap.get(cv2.CAP_PROP_FPS)
     
-    def get_frame_size(self) -> tuple[int, int]:
+    def get_frame_size(self) -> Tuple[int, int]:
         """
         Get frame dimensions.
         

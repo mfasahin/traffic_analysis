@@ -2,9 +2,10 @@
 
 import cv2
 import sys
+import json
+import numpy as np
 from pathlib import Path
 from domain.entities.roi import ROI
-import json
 
 
 class ROISelector:
@@ -76,7 +77,6 @@ class ROISelector:
             
             # Draw polygon if we have at least 3 points
             if len(self.points) >= 3:
-                import numpy as np
                 points_array = np.array(self.points, dtype=np.int32)
                 overlay = display_frame.copy()
                 cv2.fillPoly(overlay, [points_array], (0, 0, 255))

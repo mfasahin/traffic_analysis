@@ -7,8 +7,13 @@ Bu proje, video üzerinde araç sayımı ve yoğunluk analizi yapan bir Python u
 - Araç tespiti (YOLOv8)
 - Araç sayımı ve yoğunluk analizi
 - ROI (Region of Interest) desteği - yol alanı tanımlama
+- **Araç takibi (Vehicle Tracking)** - Aynı aracın birden fazla frame'de takibi
+- **Hız hesaplama** - Piksel bazlı hız ölçümü ve km/h dönüşümü
+- **Yön tespiti** - Araçların hareket yönü (yukarı/aşağı/sol/sağ)
+- **Hız limiti ihlali tespiti** - Belirlenen hız limitini aşan araçların tespiti
+- **Yön bazlı araç sayımı** - Her yöne giden araç sayısı
 - Detaylı istatistikler
-- Video görselleştirme
+- Video görselleştirme (hız, yön, tracking ID'leri)
 - JSON formatında raporlama
 - Clean Architecture mimarisi
 
@@ -60,6 +65,127 @@ python main.py --video veriseti_2.mp4 --no-display
 python main.py --video veriseti_2.mp4 --model yolov8n.pt --confidence 0.25 --roi roi_coordinates.json --output-video output.mp4 --output-json results.json
 ```
 
+### Hız ve Yön Analizi
+
+Hız ve yön analizi **kalibrasyon olmadan da çalışır**! Kalibrasyon olmadan hız **piksel/saniye** cinsinden hesaplanır. Kalibrasyon ile **km/h** cinsinden gerçek dünya hızına dönüştürülebilir.
+
+**Kalibrasyon Olmadan Kullanım (Önerilen - En Kolay):**
+```bash
+# Sadece tracking'i açın, kalibrasyon gerekmez!
+python main.py --video veriseti_2.mp4
+
+# Hız piksel/saniye (px/s) cinsinden gösterilir
+# Yön tespiti ve araç takibi çalışır
+# Hız limiti kontrolü yapılmaz (kalibrasyon gerekli)
+```
+
+**Kalibrasyon ile Kullanım (km/h için):**
+Kalibrasyon, video'daki piksel mesafelerini gerçek dünya mesafelerine (metre) çevirmek için kullanılır.
+
+#### Kalibrasyon Nedir?
+
+Kalibrasyon, video'da ölçtüğünüz piksel mesafesini gerçek dünya mesafesine (metre) çevirmek için bir oran belirleme işlemidir.
+
+**Örnek:** Video'da bir şerit genişliği 100 piksel ise ve gerçekte bu şerit 3.5 metre ise, kalibrasyon oranı: 100 piksel = 3.5 metre
+
+#### Kalibrasyon Yapmanın 3 Yolu
+
+##### Yöntem 1: İnteraktif Kalibrasyon Aracı (ÖNERİLEN - En Kolay)
+
+En kolay yöntem, otomatik kalibrasyon aracını kullanmaktır:
+
+```bash
+# Kalibrasyon aracını çalıştır
+python calibrate_speed.py veriseti_2.mp4
+
+# Araç açıldığında:
+# 1. Video'da bilinen bir mesafeyi seçin (örn: şerit genişliği)
+# 2. İki noktaya tıklayarak bu mesafeyi ölçün
+# 3. Gerçek mesafeyi metre cinsinden girin (örn: 3.5)
+# 4. Kalibrasyon otomatik olarak kaydedilir
+```
+
+Kalibrasyon tamamlandıktan sonra:
+
+```bash
+# Kaydedilen kalibrasyon ile analiz yap
+python main.py --video veriseti_2.mp4 --pixels-per-meter [araçtan_öğrendiğiniz_değer]
+```
+
+##### Yöntem 2: Manuel Referans Mesafe ile
+
+Video'da bilinen bir mesafeyi manuel olarak ölçüp kullanabilirsiniz:
+
+```bash
+# Format: "piksel,metre"
+# Örnek: 100 piksel = 3.5 metre (standart şerit genişliği)
+python main.py --video veriseti_2.mp4 --reference-distance "100,3.5"
+```
+
+**Nasıl Yapılır:**
+1. Video'yu bir görüntü düzenleyicide açın
+2. Bilinen bir mesafeyi seçin (örn: şerit genişliği 3.5m, yol işareti arası 50m)
+3. Bu mesafenin piksel cinsinden uzunluğunu ölçün
+4. `--reference-distance "piksel,metre"` formatında kullanın
+
+**Yaygın Referans Mesafeler:**
+- Standart şerit genişliği: **3.5 metre**
+- Yol işareti arası mesafe: **50 metre**
+- Yol kenarı çizgisi uzunluğu: **3-6 metre**
+
+##### Yöntem 3: ROI ve Şerit Bilgisi ile
+
+ROI (yol alanı) genişliğini ve şerit sayısını biliyorsanız:
+
+```bash
+# Format: "genişlik_piksel,şerit_sayısı,şerit_genişliği_metre"
+# Örnek: 800 piksel genişlik, 2 şerit, her şerit 3.5m
+python main.py --video veriseti_2.mp4 --roi roi_coordinates.json --roi-width-lanes "800,2,3.5"
+```
+
+#### Hız Limitli Analiz
+
+Kalibrasyon yapıldıktan sonra hız limiti belirleyebilirsiniz:
+
+```bash
+# 60 km/h hız limiti ile analiz
+python main.py --video veriseti_2.mp4 --speed-limit 60 --pixels-per-meter 28.57
+```
+
+#### Tracking Olmadan Kullanım
+
+Sadece araç sayımı yapmak istiyorsanız (hız/yön analizi olmadan):
+
+```bash
+python main.py --video veriseti_2.mp4 --no-tracking
+```
+
+#### Kalibrasyon Örnekleri
+
+**Örnek 1: Şerit Genişliği ile**
+```bash
+# Video'da bir şerit genişliği 120 piksel, gerçekte 3.5 metre
+python main.py --video veriseti_2.mp4 --reference-distance "120,3.5"
+```
+
+**Örnek 2: Direkt Oran ile**
+```bash
+# Eğer 1 metre = 28.57 piksel olduğunu biliyorsanız
+python main.py --video veriseti_2.mp4 --pixels-per-meter 28.57
+```
+
+**Örnek 3: Tam Özellikli Analiz**
+```bash
+# ROI + Kalibrasyon + Hız Limiti + Çıktı Video
+python main.py \
+  --video veriseti_2.mp4 \
+  --roi roi_coordinates.json \
+  --reference-distance "100,3.5" \
+  --speed-limit 60 \
+  --output-video output.mp4 \
+  --output-json results.json
+```
+
 ### Parametreler
 
 - `--video`: Analiz edilecek video dosyasının yolu (varsayılan: veriseti_2.mp4)
@@ -71,6 +197,11 @@ python main.py --video veriseti_2.mp4 --model yolov8n.pt --confidence 0.25 --roi
 - `--display`: İşlem sırasında videoyu göster (varsayılan: açık)
 - `--no-display`: Görüntülemeyi kapat
 - `--skip-frames`: İşlenecek frame'ler arasında atlanacak frame sayısı (0=hepsi, 1=her 2. frame, 2=her 3. frame, vb.) - Hızlandırma için kullanılır
+- `--no-tracking`: Araç takibini kapat (hız ve yön analizi olmadan sadece sayım)
+- `--pixels-per-meter`: Hız hesaplama için kalibrasyon: piksel/metre oranı
+- `--reference-distance`: Kalibrasyon: "piksel,metre" formatında (örn: "100,3.5")
+- `--roi-width-lanes`: Kalibrasyon: "genişlik_piksel,şerit_sayısı,şerit_genişliği_metre" (örn: "800,2,3.5")
+- `--speed-limit`: Hız limiti (km/h) - ihlal tespiti için (varsayılan: 50.0)
 
 ## Proje Yapısı
 
@@ -101,6 +232,7 @@ traffic_analysis/
 │       └── statistics_reporter.py
 ├── main.py                   # Ana giriş noktası
 ├── select_roi.py             # ROI seçici araç
+├── calibrate_speed.py         # Hız kalibrasyon aracı (interaktif)
 ├── requirements.txt          # Python bağımlılıkları
 └── README.md                 # Bu dosya
 ```
@@ -138,7 +270,33 @@ Analiz sonuçları JSON formatında kaydedilir:
   },
   "total_frames": 1000,
   "start_time": "2024-01-01T12:00:00",
-  "end_time": "2024-01-01T12:05:00"
+  "end_time": "2024-01-01T12:05:00",
+  "tracking": {
+    "total_tracked_vehicles": 150,
+    "average_speed_kmh": 45.2,
+    "max_speed_kmh": 78.5,
+    "total_speed_violations": 12,
+    "vehicles_by_direction": {
+      "up": 45,
+      "down": 60,
+      "left": 20,
+      "right": 25
+    },
+    "speed_statistics_by_direction": {
+      "up": {
+        "average": 42.3,
+        "max": 65.0,
+        "min": 15.0,
+        "count": 45
+      },
+      "down": {
+        "average": 48.1,
+        "max": 78.5,
+        "min": 20.0,
+        "count": 60
+      }
+    }
+  }
 }
 ```
 

@@ -1,7 +1,7 @@
 """Interface for video processing."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 
 
 class IVideoProcessor(ABC):
@@ -28,7 +28,7 @@ class IVideoProcessor(ABC):
         pass
     
     @abstractmethod
-    def get_frame_size(self) -> tuple[int, int]:
+    def get_frame_size(self) -> Tuple[int, int]:
         """Get frame dimensions (width, height)."""
         pass
     

@@ -1,6 +1,6 @@
 """Use case for counting vehicles in a frame."""
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 from domain.entities.vehicle import Vehicle, VehicleType
 from domain.entities.traffic_statistics import FrameStatistics
 from domain.entities.roi import ROI
@@ -15,7 +15,7 @@ class CountVehiclesUseCase:
         return len(vehicles)
     
     @staticmethod
-    def count_by_type(vehicles: List[Vehicle]) -> dict[VehicleType, int]:
+    def count_by_type(vehicles: List[Vehicle]) -> Dict[VehicleType, int]:
         """Count vehicles by type."""
         counts = {vt: 0 for vt in VehicleType}
         for vehicle in vehicles:

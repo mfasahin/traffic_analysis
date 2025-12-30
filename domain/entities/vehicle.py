@@ -1,7 +1,7 @@
 """Vehicle entity representing a detected vehicle."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 from enum import Enum
 
 
@@ -19,10 +19,10 @@ class VehicleType(Enum):
 class Vehicle:
     """Vehicle entity with detection information."""
     id: int
-    bbox: tuple[int, int, int, int]  # (x1, y1, x2, y2)
+    bbox: Tuple[int, int, int, int]  # (x1, y1, x2, y2)
     confidence: float
     vehicle_type: VehicleType
-    center: tuple[int, int]  # (x, y) center point
+    center: Tuple[int, int]  # (x, y) center point
     frame_number: int
     
     def __post_init__(self):
