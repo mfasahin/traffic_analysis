@@ -6,8 +6,6 @@ from datetime import datetime
 from domain.entities.vehicle import VehicleType
 from domain.entities.direction import Direction
 from domain.entities.vehicle_size import VehicleSize
-from domain.entities.day_night_detector import DayNightMode
-from domain.entities.weather_condition import WeatherCondition
 
 
 @dataclass
@@ -23,8 +21,6 @@ class FrameStatistics:
     vehicles_by_direction: Dict[Direction, int] = field(default_factory=dict)  # Vehicles by direction
     vehicles_by_size: Dict[VehicleSize, int] = field(default_factory=dict)  # Vehicles by size
     vehicles_by_lane: Dict[str, int] = field(default_factory=dict)  # Vehicles by lane (for multi-ROI)
-    day_night_mode: Optional[DayNightMode] = None  # Day/night detection
-    weather_condition: Optional[WeatherCondition] = None  # Weather condition
 
 
 @dataclass
@@ -48,8 +44,4 @@ class TrafficStatistics:
     # Advanced features
     vehicles_by_size: Dict[VehicleSize, int] = field(default_factory=dict)
     vehicles_by_lane: Dict[str, int] = field(default_factory=dict)  # For multi-ROI
-    day_night_statistics: Dict[DayNightMode, int] = field(default_factory=dict)
-    weather_statistics: Dict[WeatherCondition, int] = field(default_factory=dict)
-    dominant_day_night_mode: Optional[DayNightMode] = None
-    dominant_weather: Optional[WeatherCondition] = None
 

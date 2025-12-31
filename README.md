@@ -4,14 +4,19 @@ Bu proje, video üzerinde araç sayımı ve yoğunluk analizi yapan bir Python u
 
 ## Özellikler
 
+- **🌐 Web Arayüzü** - Streamlit ile interaktif dashboard
 - Araç tespiti (YOLOv8)
 - Araç sayımı ve yoğunluk analizi
 - ROI (Region of Interest) desteği - yol alanı tanımlama
+- **Çoklu ROI desteği** - Birden fazla şerit analizi
 - **Araç takibi (Vehicle Tracking)** - Aynı aracın birden fazla frame'de takibi
 - **Hız hesaplama** - Piksel bazlı hız ölçümü ve km/h dönüşümü
 - **Yön tespiti** - Araçların hareket yönü (yukarı/aşağı/sol/sağ)
 - **Hız limiti ihlali tespiti** - Belirlenen hız limitini aşan araçların tespiti
 - **Yön bazlı araç sayımı** - Her yöne giden araç sayısı
+- **Araç boyutuna göre sınıflandırma** - Küçük/Orta/Büyük
+- **Gece/Gündüz modu tespiti** - Otomatik tespit
+- **Hava durumu analizi** - Yağmur, sis, kar, açık tespiti
 - Detaylı istatistikler
 - Video görselleştirme (hız, yön, tracking ID'leri)
 - JSON formatında raporlama
@@ -26,6 +31,33 @@ pip install -r requirements.txt
 ```
 
 2. YOLOv8 modeli otomatik olarak indirilecektir (ilk çalıştırmada).
+
+## 🌐 Web Arayüzü (ÖNERİLEN)
+
+En kolay kullanım için web arayüzünü kullanın:
+
+```bash
+# Windows
+run_web_app.bat
+
+# Linux/Mac
+chmod +x run_web_app.sh
+./run_web_app.sh
+
+# Veya direkt
+streamlit run web_app.py
+```
+
+Web arayüzü açıldığında tarayıcınızda otomatik olarak açılacaktır (genellikle http://localhost:8501).
+
+**Web Arayüzü Özellikleri:**
+- ✅ Video yükleme ve önizleme
+- ✅ İnteraktif ROI seçimi
+- ✅ Kalibrasyon aracı (web üzerinde)
+- ✅ Analiz ayarları (slider'lar ile)
+- ✅ Gerçek zamanlı progress gösterimi
+- ✅ Detaylı istatistikler ve görselleştirme
+- ✅ Sonuçları indirme (JSON + Video)
 
 ## Kullanım
 

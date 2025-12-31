@@ -7,8 +7,6 @@ from domain.entities.roi import ROI
 from domain.entities.multi_roi import MultiROI
 from domain.entities.speed_calibration import SpeedCalibration
 from domain.entities.tracked_vehicle import TrackedVehicle
-from domain.entities.day_night_detector import DayNightDetector, DayNightMode
-from domain.entities.weather_condition import WeatherDetector, WeatherCondition, WeatherStatistics
 from domain.use_cases.count_vehicles import CountVehiclesUseCase
 from domain.use_cases.track_vehicles import VehicleTracker
 from domain.use_cases.detect_speed_violations import SpeedViolationDetector
@@ -35,8 +33,8 @@ class TrafficAnalyzerService:
         enable_tracking: bool = True,
         speed_calibration: Optional[SpeedCalibration] = None,
         speed_limit_kmh: float = 50.0,
-        enable_day_night_detection: bool = True,
-        enable_weather_detection: bool = True
+        enable_day_night_detection: bool = False,
+        enable_weather_detection: bool = False
     ):
         """
         Initialize traffic analyzer service.
@@ -53,8 +51,8 @@ class TrafficAnalyzerService:
             enable_tracking: Enable vehicle tracking for speed and direction analysis
             speed_calibration: Optional speed calibration for converting pixels to km/h
             speed_limit_kmh: Speed limit in km/h for violation detection
-            enable_day_night_detection: Enable day/night mode detection
-            enable_weather_detection: Enable weather condition detection
+            enable_day_night_detection: (Deprecated) Day/night mode detection - disabled
+            enable_weather_detection: (Deprecated) Weather condition detection - disabled
         """
         self.vehicle_detector = vehicle_detector
         self.video_processor = video_processor
@@ -82,13 +80,6 @@ class TrafficAnalyzerService:
             if speed_calibration:
                 self.speed_violation_detector = SpeedViolationDetector(speed_limit_kmh=speed_limit_kmh)
         
-        # Initialize day/night and weather detection
-        self.enable_day_night = enable_day_night_detection
-        self.day_night_detector = DayNightDetector() if enable_day_night_detection else None
-        
-        self.enable_weather = enable_weather_detection
-        self.weather_detector = WeatherDetector() if enable_weather_detection else None
-        self.weather_stats = WeatherStatistics() if enable_weather_detection else None
     
     def analyze_video(
         self,
@@ -134,22 +125,6 @@ class TrafficAnalyzerService:
             # Detect vehicles
             vehicles = self.vehicle_detector.detect_vehicles(frame)
             
-            # Detect day/night mode
-            day_night_mode = None
-            if self.enable_day_night and self.day_night_detector:
-                day_night_mode = self.day_night_detector.detect(frame)
-            
-            # Detect weather condition
-            weather_condition = None
-            if self.enable_weather and self.weather_detector:
-                day_night_str = day_night_mode.value if day_night_mode and hasattr(day_night_mode, 'value') else (day_night_mode if isinstance(day_night_mode, str) else "day")
-                weather_condition = self.weather_detector.detect(
-                    frame,
-                    day_night_mode=day_night_str
-                )
-                if self.weather_stats:
-                    self.weather_stats.add_condition(weather_condition)
-            
             # Calculate frame statistics
             timestamp = frame_number / fps if fps > 0 else 0.0
             frame_stats = CountVehiclesUseCase.create_frame_statistics(
@@ -161,10 +136,6 @@ class TrafficAnalyzerService:
                 frame_width=frame_width if (self.roi is None and self.multi_roi is None) else None,
                 frame_height=frame_height if (self.roi is None and self.multi_roi is None) else None
             )
-            
-            # Add day/night and weather info
-            frame_stats.day_night_mode = day_night_mode
-            frame_stats.weather_condition = weather_condition
             
             # Track vehicles if enabled
             tracked_vehicles: List[TrackedVehicle] = []
@@ -279,8 +250,6 @@ class TrafficAnalyzerService:
         # Aggregate advanced statistics
         vehicles_by_size = {}
         vehicles_by_lane = {}
-        day_night_counts = {}
-        weather_counts = {}
         
         for frame_stat in self.statistics.frame_statistics:
             # Size statistics
@@ -290,28 +259,9 @@ class TrafficAnalyzerService:
             # Lane statistics
             for lane_id, count in frame_stat.vehicles_by_lane.items():
                 vehicles_by_lane[lane_id] = vehicles_by_lane.get(lane_id, 0) + count
-            
-            # Day/night statistics
-            if frame_stat.day_night_mode:
-                day_night_counts[frame_stat.day_night_mode] = day_night_counts.get(frame_stat.day_night_mode, 0) + 1
-            
-            # Weather statistics
-            if frame_stat.weather_condition:
-                weather_counts[frame_stat.weather_condition] = weather_counts.get(frame_stat.weather_condition, 0) + 1
         
         self.statistics.vehicles_by_size = vehicles_by_size
         self.statistics.vehicles_by_lane = vehicles_by_lane
-        self.statistics.day_night_statistics = day_night_counts
-        self.statistics.weather_statistics = weather_counts
-        
-        # Determine dominant modes
-        if day_night_counts:
-            self.statistics.dominant_day_night_mode = max(day_night_counts.items(), key=lambda x: x[1])[0]
-        
-        if weather_counts:
-            self.statistics.dominant_weather = max(weather_counts.items(), key=lambda x: x[1])[0]
-        elif self.weather_stats:
-            self.statistics.dominant_weather = self.weather_stats.dominant_condition
         
         self.statistics.end_time = datetime.now()
         
